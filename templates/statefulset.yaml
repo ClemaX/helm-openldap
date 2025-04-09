@@ -45,7 +45,7 @@ spec:
           image: {{ include "openldap.initSchemaImage" . }}
           imagePullPolicy: {{ .Values.initSchema.image.pullPolicy | quote }}
           command:
-            - sh
+            - bash
             - -c
             - |
               host=$(hostname)
@@ -64,8 +64,16 @@ spec:
                 echo "let the replication takes care of everything :)"
               fi
             {{- if .Values.global.existingSecret }}
-              sed -i -e "s/%%CONFIG_PASSWORD%%/${LDAP_CONFIG_ADMIN_PASSWORD}/g" /custom_config/*
-              sed -i -e "s/%%ADMIN_PASSWORD%%/${LDAP_ADMIN_PASSWORD}/g" /custom_config/*
+              CONFIG_ADMIN_PASSWORD="${LDAP_CONFIG_ADMIN_PASSWORD//\\/\\\\}"
+              CONFIG_ADMIN_PASSWORD="${CONFIG_ADMIN_PASSWORD//\//\\\/}"
+              CONFIG_ADMIN_PASSWORD="${CONFIG_ADMIN_PASSWORD//&/\\&}"
+
+              ADMIN_PASSWORD="${LDAP_ADMIN_PASSWORD//\\/\\\\}"
+              ADMIN_PASSWORD="${ADMIN_PASSWORD//\//\\\/}"
+              ADMIN_PASSWORD="${ADMIN_PASSWORD//&/\\&}"
+
+              sed -i -e "s/%%CONFIG_PASSWORD%%/${CONFIG_ADMIN_PASSWORD}/g" /custom_config/*
+              sed -i -e "s/%%ADMIN_PASSWORD%%/${ADMIN_PASSWORD}/g" /custom_config/*
             {{- end }}
           {{- if .Values.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
